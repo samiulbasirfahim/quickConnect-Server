@@ -18,7 +18,20 @@ export default (io: Server) => {
             rooms[roomID] = new Map();
             rooms[roomID].set(socket.id, username);
             socket.join(roomID);
-            socket.emit("room-created", JSON.stringify({ roomID }));
+            socket.emit("room-created", { roomID });
+            console.log(
+                `User '${username}' (socket ID: ${socket.id}) created room '${roomID}'`,
+            );
+        });
+        socket.on("join-room", ({ roomID }: { roomID: string }) => {
+            if (!rooms[roomID]) {
+                return socket.emit("error", { message: "Room does not exist." });
+            }
+            const existingUsers = Array.from(rooms[roomID]);
+            rooms[roomID].set(socket.id, username);
+            socket.join(roomID);
+            socket.to(roomID).emit("user-joined", { socketID: socket.id, username });
+            socket.emit("existing-users", { existingUsers });
         });
     });
 };
