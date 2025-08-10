@@ -13,8 +13,10 @@ const generateRoomId = (len = 6) => {
 export default (io: Server) => {
     io.on("connection", (socket: Socket) => {
         const username = String(socket.handshake.query.username) ?? "unknown";
+        console.log("Connected ", username);
         socket.on("create-room", () => {
-            const roomID = generateRoomId();
+            // const roomID = generateRoomId();
+            const roomID = "000000";
             rooms[roomID] = new Map();
             rooms[roomID].set(socket.id, username);
             socket.join(roomID);
@@ -31,7 +33,23 @@ export default (io: Server) => {
             rooms[roomID].set(socket.id, username);
             socket.join(roomID);
             socket.to(roomID).emit("user-joined", { socketID: socket.id, username });
-            socket.emit("existing-users", { existingUsers });
+            socket.emit("existing-users", { roomID, existingUsers });
+        });
+
+        socket.on("offer", (data) => {
+            const { to, offer } = data;
+            socket.to(to).emit("offer", {
+                offer,
+                from: socket.id,
+            });
+        });
+
+        socket.on("answer", (data) => {
+            const { answer, to } = data;
+            socket.to(to).emit("answer", {
+                answer,
+                from: socket.id,
+            });
         });
     });
 };
