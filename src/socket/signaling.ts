@@ -15,8 +15,8 @@ export default (io: Server) => {
         const username = String(socket.handshake.query.username) ?? "unknown";
         console.log("Connected ", username);
         socket.on("create-room", () => {
-            // const roomID = generateRoomId();
-            const roomID = "000000";
+            const roomID = generateRoomId();
+            // const roomID = "000000";
             rooms[roomID] = new Map();
             rooms[roomID].set(socket.id, username);
             socket.join(roomID);
@@ -38,6 +38,7 @@ export default (io: Server) => {
 
         socket.on("offer", (data) => {
             const { to, offer } = data;
+            console.log("forwarding offer to", to);
             socket.to(to).emit("offer", {
                 offer,
                 from: socket.id,
@@ -46,10 +47,19 @@ export default (io: Server) => {
 
         socket.on("answer", (data) => {
             const { answer, to } = data;
+            console.log("forwarding answer to ", to);
             socket.to(to).emit("answer", {
                 answer,
                 from: socket.id,
             });
+        });
+
+        socket.on("ice-candidate", ({ to, candidate }) => {
+            console.log(`Forwarding candidate to ${to}`);
+            io.to(to).emit("ice-candidate", { sender: socket.id, candidate });
+        });
+        socket.on("disconnect", () => {
+            console.log("Disoconnected: ", username);
         });
     });
 };
